@@ -15,15 +15,27 @@ class Project {
 }
 
 // type listener
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
+
+// Base class for general state
+class State<T>{
+    protected listeners: Listener<T>[] = [];
+
+    constructor() {
+    }
+
+    addListener(listenerFn: Listener<T>) {
+        this.listeners.push(listenerFn);
+    }
+}
 
 // Project State Management
-class ProjectState {
-    private listeners: Listener[] = [];
+class ProjectState extends State<Project>{
     private projects: Project[] = [];
     private static instance: ProjectState;
 
     private constructor() {
+        super();
     }
 
     static getInstance() {
@@ -32,10 +44,6 @@ class ProjectState {
         }
         this.instance = new ProjectState();
         return this.instance;
-    }
-
-    addListener(listenerFn: Listener) {
-        this.listeners.push(listenerFn);
     }
 
     addProject(title: string, description: string, numOfPeople: number) {
@@ -139,7 +147,6 @@ abstract class Component<U extends HTMLElement, T extends HTMLElement> {
     }
 
     abstract renderContent(): void;
-
     abstract configure(): void;
 
 }
@@ -169,16 +176,6 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
         this.renderContent();
     }
 
-    private renderProjects() {
-        const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
-        listEl.innerHTML = '';
-        for (const prjItem of this.assignedProjects) {
-            const listItem = document.createElement('li');
-            listItem.textContent = prjItem.title;
-            listEl.appendChild(listItem)
-        }
-    }
-
     renderContent() {
         const listId = `${this.type}-projects-list`;
         this.element.querySelector('ul')!.id = listId;
@@ -189,6 +186,15 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     configure() {
     }
 
+    private renderProjects() {
+        const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+        listEl.innerHTML = '';
+        for (const prjItem of this.assignedProjects) {
+            const listItem = document.createElement('li');
+            listItem.textContent = prjItem.title;
+            listEl.appendChild(listItem)
+        }
+    }
 }
 
 
@@ -250,6 +256,13 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
         }
     }
 
+    configure() {
+        this.element.addEventListener('submit', this.submitHandler);
+    }
+
+    renderContent() {
+    }
+
     private clearInputs() {
         this.titleInputElement.value = '';
         this.descriptionInputElement.value = '';
@@ -266,14 +279,6 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
             this.clearInputs();
         }
     }
-
-    configure() {
-        this.element.addEventListener('submit', this.submitHandler);
-    }
-
-    renderContent() {
-    }
-
 }
 
 const prjInput = new ProjectInput();
