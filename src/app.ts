@@ -1,12 +1,12 @@
 // Interface for drag and drop
 interface Draggable {
-    startDragHandler(event: DragEvent): void;
-    endDragHandler(event: DragEvent): void;
+    dragStartHandler(event: DragEvent): void;
+    dragEndHandler(event: DragEvent): void;
 }
 interface Dragtarget {
-    startDropHandler(event: DragEvent): void;
+    dragOverHandler(event: DragEvent): void;
     dropHandler(event: DragEvent): void;
-    leaveDropHandler(event: DragEvent): void;
+    dragLeaveHandler(event: DragEvent): void;
 }
 
 enum ProjectStatus {
@@ -182,17 +182,17 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement>
 
     }
 
-    startDragHandler(event: DragEvent) {
+    dragStartHandler(event: DragEvent) {
         console.log(event);
     }
-    endDragHandler(_: DragEvent) {
+    dragEndHandler(_: DragEvent) {
         console.log(event);
     }
 
     @autobind
     configure() {
-        this.element.addEventListener('dragstart', this.startDragHandler);
-        this.element.addEventListener('dragend', this.endDragHandler);
+        this.element.addEventListener('dragstart', this.dragStartHandler);
+        this.element.addEventListener('dragend', this.dragEndHandler);
     }
 
     renderContent() {
@@ -204,7 +204,8 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement>
 
 
 // ProjectList Class
-class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+class ProjectList extends Component<HTMLDivElement, HTMLElement>
+    implements Dragtarget{
     assignedProjects: Project[];
 
     constructor(private type: 'active' | 'finished') {
@@ -212,17 +213,6 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
         super('project-list', 'app', true, `${type}-projects`);
 
         this.assignedProjects = [];
-
-        projectState.addListener((projects: Project[]) => {
-            this.assignedProjects = projects.filter((project) => {
-                    if (this.type === 'active') {
-                        return project.status === ProjectStatus.Active;
-                    } else
-                        return project.status === ProjectStatus.Finished;
-                }
-            )
-            this.renderProjects();
-        });
 
         this.configure();
         this.renderContent();
@@ -235,7 +225,33 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
             this.type.toUpperCase() + ' PROJECTS';
     }
 
+    @autobind
+    dragOverHandler(_: DragEvent) {
+        this.element.querySelector('ul')!.classList.add('droppable');
+    }
+    @autobind
+    dropHandler(_: DragEvent) {
+    }
+    @autobind
+    dragLeaveHandler(_: DragEvent) {
+        this.element.querySelector('ul')!.classList.remove('droppable');
+    }
+
     configure() {
+        this.element.addEventListener('dragover', this.dragOverHandler);
+        this.element.addEventListener('drop', this.dropHandler);
+        this.element.addEventListener('dragleave', this.dragLeaveHandler);
+
+        projectState.addListener((projects: Project[]) => {
+            this.assignedProjects = projects.filter((project) => {
+                    if (this.type === 'active') {
+                        return project.status === ProjectStatus.Active;
+                    } else
+                        return project.status === ProjectStatus.Finished;
+                }
+            )
+            this.renderProjects();
+        });
     }
 
     private renderProjects() {
